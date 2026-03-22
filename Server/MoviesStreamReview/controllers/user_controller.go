@@ -82,7 +82,7 @@ func LoginUser() gin.HandlerFunc {
 		var userLogin models.UserLogin
 
 		if err := c.ShouldBindJSON(&userLogin); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalide input data"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data"})
 			return
 		}
 
