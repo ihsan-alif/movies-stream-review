@@ -10,6 +10,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/ihsan-alif/movies-stream-review/Server/MoviesStreamReviewServer/database"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type SignedDetails struct {
@@ -24,7 +25,6 @@ type SignedDetails struct {
 var (
 	SECRET_KEY         = []byte(os.Getenv("SECRET_KEY"))
 	SECRET_REFRESH_KEY = []byte(os.Getenv("SECRET_REFRESH_KEY"))
-	userCollection     = database.OpenCollection("users")
 )
 
 func GenerateAllToken(email, firstName, lastName, role, userId string) (string, string, error) {
@@ -67,7 +67,7 @@ func GenerateAllToken(email, firstName, lastName, role, userId string) (string, 
 	return signedToken, signedRefreshToken, nil
 }
 
-func UpdateAllTokens(userId, token, refreshToken string) (err error) {
+func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
@@ -81,6 +81,8 @@ func UpdateAllTokens(userId, token, refreshToken string) (err error) {
 		},
 	}
 
+
+	var userCollection *mongo.Collection = database.OpenCollection("users", client)
 	_, err = userCollection.UpdateOne(ctx, bson.M{"user_id": userId}, updateData)
 	if err != nil {
 		return err
@@ -122,6 +124,27 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 	return claims, nil
 }
 
+func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
+	claims := &SignedDetails{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
+		return []byte(SECRET_REFRESH_KEY), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, err
+	}
+
+	if claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, errors.New("refresh token has expired")
+	}
+
+	return claims, nil
+	
+}
+
 func GetUserIdFromContext(c *gin.Context) (string, error) {
 	userId, exist := c.Get("user_id")
 	if !exist {
@@ -134,4 +157,18 @@ func GetUserIdFromContext(c *gin.Context) (string, error) {
 	}
 
 	return id, nil
+}
+
+func GetUserRoleFromContext(c *gin.Context) (string, error) {
+	role, exist := c.Get("role")
+	if !exist {
+		return "", errors.New("role does not exists in this context")
+	}
+
+	memberRole, ok := role.(string)
+	if !ok {
+		return "", errors.New("unable to retrieve role")
+	}
+
+	return memberRole, nil
 }
