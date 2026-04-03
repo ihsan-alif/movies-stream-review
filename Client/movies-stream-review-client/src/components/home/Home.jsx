@@ -13,14 +13,8 @@ const Home = () => {
             setMessage("")
         try {
             const response = await axiosClient.get('/movies');
-
-            // === DEBUGGING PENTING ===
-                console.log("Full response:", response);
-                console.log("response.data:", response.data);
-                console.log("Tipe data:", typeof response.data);
-                console.log("Apakah array?", Array.isArray(response.data));
-
             setMovies(response.data);
+            
             if (response.data.length === 0) {
                 setMessage('There are currently no movies available')
             }
