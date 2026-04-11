@@ -43,7 +43,7 @@ func GenerateAllToken(email, firstName, lastName, role, userId string) (string, 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(SECRET_KEY)
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
 
 	refreshClaims := &SignedDetails{
@@ -92,14 +92,19 @@ func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) (
 }
 
 func GetAccessToken(c *gin.Context) (string, error) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		return "", errors.New("Authorization header is required")
+	// authHeader := c.GetHeader("Authorization")
+	// if authHeader == "" {
+	// 	return "", errors.New("Authorization header is required")
+	// }
+	// tokenString := authHeader[len("Bearer "):]
+	// if tokenString == "" {
+	// 	return "", errors.New("Bearer token is required")
+	// }
+	tokenString, err := c.Cookie("access_token")
+	if err != nil {
+		return "", err
 	}
-	tokenString := authHeader[len("Bearer "):]
-	if tokenString == "" {
-		return "", errors.New("Bearer token is required")
-	}
+
 	return tokenString, nil
 }
 

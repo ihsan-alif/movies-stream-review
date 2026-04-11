@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/ihsan-alif/movies-stream-review/Server/MoviesStreamReviewServer/database"
 	"github.com/ihsan-alif/movies-stream-review/Server/MoviesStreamReviewServer/routes"
@@ -35,6 +39,31 @@ func main() {
 			log.Fatalf("failed to disconnect from mongoDB: %v", err)
 		}
 	}()
+
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	var origins []string
+	if allowedOrigins != "" {
+		origins = strings.Split(allowedOrigins, ",")
+		for i := range origins {
+			origins[i] = strings.TrimSpace(origins[i])
+			log.Println("Allowed Origin:", origins[i])
+		}
+	} else {
+		origins = []string{"http://localhost:5173"}
+		log.Println("Allowed Origin: http://localhost:5173")
+	}
+
+	config := cors.Config{}
+	config.AllowOrigins = origins
+	config.AllowMethods = []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"}
+	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	config.ExposeHeaders = []string{"Content-Length"}
+	config.AllowCredentials = true
+	config.MaxAge = time.Hour
+
+	router.Use(cors.New(config))
+	router.Use(gin.Logger())
 
 	routes.SetupUnProtectedRoutes(router, client)
 	routes.SetupProtectedRoutes(router, client)

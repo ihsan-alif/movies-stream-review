@@ -113,14 +113,34 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name: "access_token",
+			Value: token,
+			Path: "/",
+			// Domain: "localhost",
+			MaxAge: 86400,
+			Secure: true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name: "refresh_token",
+			Value: refreshToken,
+			Path: "/",
+			// Domain: "localhost",
+			MaxAge: 604800,
+			Secure: true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
 		c.JSON(http.StatusOK, models.UserResponse{
 			UserId:          foundUser.UserId,
 			FirstName:       foundUser.FirstName,
 			LastName:        foundUser.LastName,
 			Email:           foundUser.Email,
 			Role:            foundUser.Role,
-			Token:           token,
-			RefreshToken:    refreshToken,
 			FavouriteGenres: foundUser.FavouriteGenres,
 		})
 	}
@@ -142,6 +162,28 @@ func LogoutUser(client *mongo.Client) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error logging out"})
 			return 
 		}
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name: "access_token",
+			Value: "",
+			Path: "/",
+			// Domain: "localhost",
+			MaxAge: -1,
+			Secure: true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name: "refresh_token",
+			Value: "",
+			Path: "/",
+			// Domain: "localhost",
+			MaxAge: -1,
+			Secure: true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
 
 		c.JSON(http.StatusOK, gin.H{"message": "logout successfully"})
 
@@ -180,6 +222,9 @@ func RefreshTokenHandler(client *mongo.Client) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error updating token"})
 			return 
 		}
+
+		c.SetCookie("access_token", newtoken, 86400, "/", "localhost", true, true)
+		c.SetCookie("refresh_token", newRefreshToken, 604800, "/", "localhost", true, true)
 
 		c.JSON(http.StatusOK, gin.H{"message": "tokens refreshed"})
 
