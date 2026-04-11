@@ -6,7 +6,7 @@ import Navbar from 'react-bootstrap/Navbar'
 import {useNavigate, NavLink, Link} from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 
-const Header = () => {
+const Header = ({handleLogout}) => {
     const navigate = useNavigate();
     const {auth} = useAuth();
 
@@ -27,10 +27,10 @@ const Header = () => {
                     <Nav className="ms-auto align-items-center">
                         {auth ? (
                             <>
-                                <span>
+                                <span className="me-3 text-light">
                                     Hello, <strong>{auth.first_name}</strong>
                                 </span>
-                                <Button variant="outline-light" size="sm">
+                                <Button variant="outline-light" size="sm" onClick={handleLogout} >
                                     Logout
                                 </Button>
                             </>
