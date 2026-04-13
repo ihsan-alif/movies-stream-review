@@ -1,0 +1,5 @@
+# Environtment files
+Client/movies-stream-review-client/.env
+Server/MoviesStreamServer/.env
+.env
+*.env
